@@ -4,7 +4,7 @@ let isRunning = false;
 let stopRequested = false;
 let useProxies = false;
 let wordlist = [];
-let proxies;
+let PROXIES;
 
 function logMessage(message) {
     const logDiv = document.getElementById('logs');
