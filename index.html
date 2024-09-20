@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Erwin Web</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/bip39@3.0.4/index.js"></script>
+</head>
+<body>
+    <h1>Web-Based Erwin Submission</h1>
+    <div id="api-key-input">
+        <input type="text" id="api-key" placeholder="Enter API Key">
+        <button id="add-key">Add Key</button>
+        <button id="start-stop">Start Submission</button>
+    </div>
+    <div id="api-keys-list"></div>
+    <div id="proxy-input">
+        <input type="file" id="proxy-file" accept=".txt">
+        <button id="upload-proxies">Upload Proxies</button>
+        <button id="toggle-proxies">Enable Proxies</button>
+        <span id="proxy-status">Proxies: Disabled</span>
+    </div>
+    <div id="logs"></div>
+    <script src="script.js"></script>
+</body>
+</html>

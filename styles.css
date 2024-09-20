@@ -1,0 +1,76 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f0f0f0;
+}
+
+h1 {
+    color: #333;
+}
+
+#api-key-input {
+    margin-bottom: 20px;
+}
+
+#api-key-input input {
+    padding: 5px;
+    width: 300px;
+}
+
+#api-key-input button, #start-stop {
+    padding: 5px 10px;
+    margin-left: 10px;
+}
+
+#api-keys-list {
+    margin-bottom: 20px;
+}
+
+#api-keys-list p {
+    margin: 5px 0;
+}
+
+#logs {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+#logs p {
+    margin: 5px 0;
+    padding: 5px;
+    border-bottom: 1px solid #eee;
+}
+
+#logs p:last-child {
+    border-bottom: none;
+}
+
+.remove-key {
+    background: none;
+    border: none;
+    color: red;
+    cursor: pointer;
+    font-weight: bold;
+    margin-left: 10px;
+}
+
+.remove-key:hover {
+    color: darkred;
+}
+
+#proxy-input {
+    margin-bottom: 20px;
+}
+
+#proxy-input input[type="file"] {
+    margin-right: 10px;
+}
+
+#proxy-status {
+    margin-left: 10px;
+}
