@@ -271,6 +271,19 @@ function loadProxies() {
     }
 }
 
+function downloadLogs() {
+    const logs = document.getElementById('logs').innerText;
+    const blob = new Blob([logs], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'erwin_logs.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
 window.onload = function() {
     fetchWordlist();
     loadApiKeys();
@@ -279,6 +292,7 @@ window.onload = function() {
     document.getElementById('start-stop').addEventListener('click', toggleSubmission);
     document.getElementById('upload-proxies').addEventListener('click', uploadProxies);
     document.getElementById('toggle-proxies').addEventListener('click', toggleProxies);
+    document.getElementById('download-logs').addEventListener('click', downloadLogs);
 
     const toggleButton = document.getElementById('toggle-proxies');
     const proxyStatus = document.getElementById('proxy-status');
