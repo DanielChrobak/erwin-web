@@ -5,23 +5,47 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Erwin Web</title>
     <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <h1>Web-Based Erwin Submission</h1>
-    <div id="api-key-input">
-        <input type="text" id="api-key" placeholder="Enter API Key">
-        <button id="add-key">Add Key</button>
-        <button id="start-stop">Start Submission</button>
+    <div class="container">
+        <header>
+            <h1>Erwin Web Submission</h1>
+        </header>
+        <main>
+            <section id="api-key-section">
+                <h2>API Keys</h2>
+                <div class="input-group">
+                    <input type="text" id="api-key" placeholder="Enter API Key">
+                    <button id="add-key" class="btn">Add Key</button>
+                </div>
+                <div id="api-keys-list"></div>
+            </section>
+            <section id="proxy-section">
+                <h2>Proxy Settings</h2>
+                <div class="input-group">
+                    <input type="file" id="proxy-file" accept=".txt">
+                    <button id="upload-proxies" class="btn">Upload Proxies</button>
+                </div>
+            </section>
+            <section id="control-section">
+                <div class="control-group">
+                    <div class="left-controls">
+                        <button id="toggle-proxies" class="btn">Enable Proxies</button>
+                        <span id="proxy-status" style="color: #e74c3c">Proxies: Disabled</span>
+                    </div>
+                    <div class="right-controls">
+                        <button id="start-stop" class="btn btn-primary">Start Submission</button>
+                    </div>
+                </div>
+            </section>
+            <section id="logs-section">
+                <h2>Logs</h2>
+                <div id="logs"></div>
+                <button id="download-logs" class="btn">Download Logs</button>
+            </section>
+        </main>
     </div>
-    <div id="api-keys-list"></div>
-    <div id="proxy-input">
-        <input type="file" id="proxy-file" accept=".txt">
-        <button id="upload-proxies">Upload Proxies</button>
-        <button id="toggle-proxies">Enable Proxies</button>
-        <span id="proxy-status">Proxies: Disabled</span>
-    </div>
-    <div id="logs"></div>
-    <button id="download-logs">Download Logs</button>
     <script src="script.js"></script>
 </body>
 </html>
