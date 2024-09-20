@@ -145,8 +145,10 @@ function addApiKey() {
 function updateApiKeysList() {
     const apiKeysList = document.getElementById('api-keys-list');
     apiKeysList.innerHTML = API_KEYS.map((key, index) => 
-        `<p>API Key ${index + 1}: ${key.slice(0, 10)}... 
-         <button class="remove-key" data-index="${index}" style="color: red; margin-left: 10px;">X</button></p>`
+        `<p>
+            <span>API Key ${index + 1}: ${key.slice(0, 10)}...</span>
+            <button class="remove-key" data-index="${index}">Remove</button>
+         </p>`
     ).join('');
 
     document.querySelectorAll('.remove-key').forEach(button => {
@@ -243,9 +245,11 @@ function toggleProxies() {
     if (useProxies) {
         toggleButton.textContent = 'Disable Proxies';
         proxyStatus.textContent = 'Proxies: Enabled';
+        proxyStatus.style.color = '#4CAF50';
     } else {
         toggleButton.textContent = 'Enable Proxies';
         proxyStatus.textContent = 'Proxies: Disabled';
+        proxyStatus.style.color = '#e74c3c';
     }
     logMessage(`Proxy usage ${useProxies ? 'enabled' : 'disabled'}.`);
 
