@@ -69,7 +69,7 @@ function getRandomProxy() {
     return PROXIES[Math.floor(Math.random() * PROXIES.length)];
 }
 
-async function submitGuesses(apiKey, sleepTime) {
+async function submitGuesses(apiKey) {
     let attemptCount = 0;
     while (!stopRequested) {
         attemptCount++;
@@ -77,7 +77,7 @@ async function submitGuesses(apiKey, sleepTime) {
         console.log(passwords);
         const proxy = useProxies ? getRandomProxy() : null;
         
-        logMessage(`🔑️ API Key: ${apiKey.slice(0, 10)}... | Submission: ${attemptCount} | Sleep: ${sleepTime}s${proxy ? ` | Proxy: ${proxy}` : ''}`);
+        logMessage(`🔑️ API Key: ${apiKey.slice(0, 10)}... | Submission: ${attemptCount}${proxy ? ` | Proxy: ${proxy}` : ''}`);
         logMessage(`➡️ Submitting ${passwords.length} guesses to oracle`);
 
         const startTime = Date.now();
@@ -100,21 +100,15 @@ async function submitGuesses(apiKey, sleepTime) {
 
             if (response.status === 202) {
                 logMessage(`✅ Guesses accepted | API Key: ${apiKey.slice(0, 10)}... | Time: ${requestTime.toFixed(2)}s`);
-                sleepTime = Math.max(1, sleepTime - 1);
             } else {
                 const responseText = await response.text();
                 logMessage(`❌ Guesses rejected | API Key: ${apiKey.slice(0, 10)}... | Status: ${response.status} | Response: ${responseText} | Time: ${requestTime.toFixed(2)}s`);
-                sleepTime += 10;
             }
         } catch (error) {
             logMessage(`⚠️ Request error | API Key: ${apiKey.slice(0, 10)}... | Error: ${error}`);
-            sleepTime += 10;
         }
 
         if (stopRequested) break;
-
-        logMessage(`💤 Sleeping for ${sleepTime}s | API Key: ${apiKey.slice(0, 10)}...`);
-        await new Promise(resolve => setTimeout(resolve, sleepTime * 1000));
     }
 }
 
@@ -186,7 +180,7 @@ function startSubmission() {
     document.getElementById('start-stop').textContent = 'Stop Submission';
     logMessage('Starting submission process...');
     API_KEYS.forEach((apiKey, index) => {
-        submitGuesses(apiKey, 60);
+        submitGuesses(apiKey);
     });
 }
 
