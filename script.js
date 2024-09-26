@@ -12,7 +12,7 @@ let logCounter = 0;
 function toggleAutoDownload() {
     autoDownloadLogs = !autoDownloadLogs;
     const toggleButton = document.getElementById('toggle-auto-download');
-    toggleButton.textContent = autoDownloadLogs ? 'Disable Auto-Download' : 'Enable Auto-Download';
+    toggleButton.textContent = autoDownloadLogs ? 'Disable Auto-Download (logs)' : 'Enable Auto-Download (logs)';
     logMessage(`Auto-download logs ${autoDownloadLogs ? 'enabled' : 'disabled'}.`);
 }
 
