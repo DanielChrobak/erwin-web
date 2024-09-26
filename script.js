@@ -1,164 +1,331 @@
-:root {
-    --primary-color: #4a90e2;
-    --secondary-color: #1e1e1e;
-    --text-color: #f5f5f5;
-    --border-color: #444;
+const API_URL = "https://api.erwin.lol";
+let API_KEYS = [];
+let isRunning = false;
+let stopRequested = false;
+let useProxies = false;
+let wordlist = [];
+let PROXIES;
+
+let autoDownloadLogs = false;
+let logCounter = 0;
+
+function toggleAutoDownload() {
+    autoDownloadLogs = !autoDownloadLogs;
+    const toggleButton = document.getElementById('toggle-auto-download');
+    toggleButton.textContent = autoDownloadLogs ? 'Disable Auto-Download' : 'Enable Auto-Download';
+    logMessage(`Auto-download logs ${autoDownloadLogs ? 'enabled' : 'disabled'}.`);
 }
 
-body {
-    font-family: 'Roboto', sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: var(--secondary-color);
-    color: var(--text-color);
-    line-height: 1.6;
+function autoDownloadAndClearLogs() {
+    if (logCounter >= 1000) {
+        downloadLogs();
+        document.getElementById('logs').innerHTML = '';
+        logCounter = 0;
+    }
 }
 
-.container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
+function logMessage(message) {
+    const logDiv = document.getElementById('logs');
+    const logEntry = document.createElement('p');
+    logEntry.textContent = `${new Date().toISOString()} - ${message}`;
+    logDiv.appendChild(logEntry);
+    logDiv.scrollTop = logDiv.scrollHeight;
+    console.log(message);
+    logCounter++;
+    if (autoDownloadLogs) {
+        autoDownloadAndClearLogs();
+    }
 }
 
-header {
-    text-align: center;
-    margin-bottom: 30px;
+async function fetchWordlist() {
+    const url = 'https://raw.githubusercontent.com/bitcoin/bips/master/bip-0039/english.txt';
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const text = await response.text();
+        wordlist = text.split('\n').filter(word => word.trim() !== '');
+    } catch (error) {
+        console.error('Error fetching wordlist:', error);
+    }
 }
 
-h1 {
-    color: var(--primary-color);
+function generateEntropy(bits = 128) {
+    return crypto.getRandomValues(new Uint8Array(bits / 8));
 }
 
-h2 {
-    color: var(--primary-color);
-    border-bottom: 2px solid var(--primary-color);
-    padding-bottom: 10px;
-    margin-top: 30px;
+async function calculateChecksum(entropy) {
+    const hashBuffer = await crypto.subtle.digest('SHA-256', entropy);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const checksumLength = entropy.length * 8 / 32;
+    const checksumBits = hashArray[0] >> (8 - checksumLength);
+    return checksumBits.toString(2).padStart(checksumLength, '0');
 }
 
-.input-group {
-    display: flex;
-    margin-bottom: 15px;
+function entropyToBits(entropy) {
+    return Array.from(entropy).map(byte => byte.toString(2).padStart(8, '0')).join('');
 }
 
-input[type="text"], input[type="file"] {
-    flex-grow: 1;
-    padding: 10px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    font-size: 16px;
-    background-color: #3a3a3a;
-    color: var(--text-color);
+function bitsToIndices(entropyBits, checksumBits) {
+    const fullBits = entropyBits + checksumBits;
+    const indices = [];
+    for (let i = 0; i < fullBits.length; i += 11) {
+        indices.push(parseInt(fullBits.slice(i, i + 11), 2));
+    }
+    return indices;
 }
 
-.btn {
-    padding: 10px 20px;
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.3s ease;
+async function generateMnemonic(entropy) {
+    const checksum = await calculateChecksum(entropy);
+    const entropyBits = entropyToBits(entropy);
+    const indices = bitsToIndices(entropyBits, checksum);
+    return indices.map(index => wordlist[index]);
 }
 
-.btn:hover {
-    background-color: #3a78c1;
+async function generateMnemonicPhrase() {
+    const entropy = generateEntropy(128);
+    const mnemonic = await generateMnemonic(entropy);
+    return mnemonic.join(' ');
 }
 
-.btn-primary {
-    background-color: #4CAF50;
+function getRandomProxy() {
+    return PROXIES[Math.floor(Math.random() * PROXIES.length)];
 }
 
-.btn-primary:hover {
-    background-color: #45a049;
+async function submitGuesses(apiKey) {
+    let attemptCount = 0;
+    while (!stopRequested) {
+        attemptCount++;
+        const passwords = await Promise.all(Array(50).fill().map(() => generateMnemonicPhrase()));
+        console.log(passwords);
+        const proxy = useProxies ? getRandomProxy() : null;
+        
+        logMessage(`🔑️ API Key: ${apiKey.slice(0, 10)}... | Submission: ${attemptCount}${proxy ? ` | Proxy: ${proxy}` : ''}`);
+        logMessage(`➡️ Submitting ${passwords.length} guesses to oracle`);
+
+        const startTime = Date.now();
+        try {
+            const headers = {
+                'x-api-key': apiKey,
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            };
+            if (useProxies && proxy) {
+                headers['X-Forwarded-For'] = proxy;
+            }
+
+            const response = await fetch(`${API_URL}/submit_guesses`, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify(passwords),
+            });
+            const requestTime = (Date.now() - startTime) / 1000;
+
+            if (response.status === 202) {
+                logMessage(`✅ Guesses accepted | API Key: ${apiKey.slice(0, 10)}... | Time: ${requestTime.toFixed(2)}s`);
+            } else {
+                const responseText = await response.text();
+                logMessage(`❌ Guesses rejected | API Key: ${apiKey.slice(0, 10)}... | Status: ${response.status} | Response: ${responseText} | Time: ${requestTime.toFixed(2)}s`);
+            }
+        } catch (error) {
+            logMessage(`⚠️ Request error | API Key: ${apiKey.slice(0, 10)}... | Error: ${error}`);
+        }
+
+        if (stopRequested) break;
+    }
 }
 
-#api-keys-list p {
-    background-color: #2c2c2c;
-    padding: 10px;
-    border-radius: 4px;
-    margin-bottom: 10px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+function addApiKey() {
+    const apiKeyInput = document.getElementById('api-key');
+    const apiKey = apiKeyInput.value.trim();
+    if (apiKey) {
+        if (API_KEYS.includes(apiKey)) {
+            alert('This API key has already been added.');
+        } else {
+            API_KEYS.push(apiKey);
+            apiKeyInput.value = '';
+            updateApiKeysList();
+            saveApiKeys();
+            logMessage(`New API Key added: ${apiKey.slice(0, 10)}...`);
+
+            if (isRunning) {
+                logMessage('Restarting submission process to include new API key...');
+                stopSubmission();
+                setTimeout(() => {
+                    startSubmission();
+                }, 1000);
+            }
+        }
+    }
 }
 
-.remove-key {
-    background: none;
-    border: none;
-    color: #e74c3c;
-    cursor: pointer;
-    font-weight: bold;
+function updateApiKeysList() {
+    const apiKeysList = document.getElementById('api-keys-list');
+    apiKeysList.innerHTML = API_KEYS.map((key, index) => 
+        `<p>
+            <span>API Key ${index + 1}: ${key.slice(0, 10)}...</span>
+            <button class="remove-key" data-index="${index}">Remove</button>
+         </p>`
+    ).join('');
+
+    document.querySelectorAll('.remove-key').forEach(button => {
+        button.addEventListener('click', removeApiKey);
+    });
 }
 
-#logs {
-    background-color: #2c2c2c;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    padding: 15px;
-    max-height: 300px;
-    overflow-y: auto;
-    margin-bottom: 15px;
+function removeApiKey(event) {
+    const index = event.target.getAttribute('data-index');
+    const removedKey = API_KEYS[index];
+    API_KEYS.splice(index, 1);
+    updateApiKeysList();
+    saveApiKeys();
+    logMessage(`Removed API Key: ${removedKey.slice(0, 10)}...`);
+
+    if (isRunning) {
+        stopSubmission();
+        setTimeout(() => {
+            if (API_KEYS.length > 0) {
+                startSubmission();
+            } else {
+                logMessage('No API keys left. Submission stopped.');
+            }
+        }, 1000);
+    }
 }
 
-#logs p {
-    margin: 5px 0;
-    padding: 5px 0;
-    border-bottom: 1px solid var(--border-color);
-    color: var(--text-color);
+function startSubmission() {
+    if (API_KEYS.length === 0) {
+        alert('Please add at least one API key before starting.');
+        return;
+    }
+    isRunning = true;
+    stopRequested = false;
+    document.getElementById('start-stop').textContent = 'Stop Submission';
+    logMessage('Starting submission process...');
+    API_KEYS.forEach((apiKey, index) => {
+        submitGuesses(apiKey);
+    });
 }
 
-#logs p:last-child {
-    border-bottom: none;
+function stopSubmission() {
+    stopRequested = true;
+    isRunning = false;
+    document.getElementById('start-stop').textContent = 'Start Submission';
+    logMessage('Stopping submission. Please wait for the current cycle to complete.');
 }
 
-#download-logs {
-    display: block;
-    margin: 20px auto;
-    background-color: #4CAF50;
-    color: white;
+function toggleSubmission() {
+    if (!isRunning) {
+        startSubmission();
+    } else {
+        stopSubmission();
+    }
 }
 
-.control-group {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
+function saveApiKeys() {
+    localStorage.setItem('apiKeys', JSON.stringify(API_KEYS));
 }
 
-.left-controls {
-    display: flex;
-    align-items: center;
+function loadApiKeys() {
+    const savedKeys = localStorage.getItem('apiKeys');
+    if (savedKeys) {
+        API_KEYS = JSON.parse(savedKeys);
+        updateApiKeysList();
+        logMessage(`Loaded ${API_KEYS.length} API key(s) from storage.`);
+    }
 }
 
-.right-controls {
-    margin-left: auto;
+function uploadProxies() {
+    const fileInput = document.getElementById('proxy-file');
+    const file = fileInput.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const content = e.target.result;
+            PROXIES = content.split('\n').filter(line => line.trim() !== '');
+            saveProxies();
+            logMessage(`Uploaded ${PROXIES.length} proxies.`);
+        };
+        reader.readAsText(file);
+    }
 }
 
-#toggle-proxies {
-    margin-right: 10px;
+function toggleProxies() {
+    if (!useProxies && (!PROXIES || PROXIES.length === 0)) {
+        alert('No proxies available. Please upload proxies before enabling.');
+        return;
+    }
+
+    useProxies = !useProxies;
+    const toggleButton = document.getElementById('toggle-proxies');
+    const proxyStatus = document.getElementById('proxy-status');
+    if (useProxies) {
+        toggleButton.textContent = 'Disable Proxies';
+        proxyStatus.textContent = 'Proxies: Enabled';
+        proxyStatus.style.color = '#4CAF50';
+    } else {
+        toggleButton.textContent = 'Enable Proxies';
+        proxyStatus.textContent = 'Proxies: Disabled';
+        proxyStatus.style.color = '#e74c3c';
+    }
+    logMessage(`Proxy usage ${useProxies ? 'enabled' : 'disabled'}.`);
+
+    if (isRunning) {
+        logMessage('Restarting submission process to update proxy settings...');
+        stopSubmission();
+        setTimeout(() => {
+            startSubmission();
+        }, 1000);
+    }
 }
 
-#proxy-status {
-    margin-left: 10px;
-    font-weight: bold;
-    color: #e0e0e0;
+
+function saveProxies() {
+    localStorage.setItem('proxies', JSON.stringify(PROXIES));
 }
 
-#start-stop {
-    padding: 10px 20px;
+function loadProxies() {
+    const savedProxies = localStorage.getItem('proxies');
+    if (savedProxies) {
+        PROXIES = JSON.parse(savedProxies);
+        logMessage(`Loaded ${PROXIES.length} proxy(ies) from storage.`);
+    }
 }
 
-.btn-secondary {
-    background-color: #f39c12;
-    color: white;
+function downloadLogs() {
+    const logs = document.getElementById('logs').innerText;
+    const blob = new Blob([logs], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'erwin_logs.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }
 
-.btn-secondary:hover {
-    background-color: #e67e22;
-}
+window.onload = function() {
+    fetchWordlist();
+    loadApiKeys();
+    loadProxies();
+    document.getElementById('toggle-auto-download').addEventListener('click', toggleAutoDownload);
+    document.getElementById('add-key').addEventListener('click', addApiKey);
+    document.getElementById('start-stop').addEventListener('click', toggleSubmission);
+    document.getElementById('upload-proxies').addEventListener('click', uploadProxies);
+    document.getElementById('toggle-proxies').addEventListener('click', toggleProxies);
+    document.getElementById('download-logs').addEventListener('click', downloadLogs);
 
-#toggle-auto-download {
-    margin-left: 10px;
-}
+    const toggleButton = document.getElementById('toggle-proxies');
+    const proxyStatus = document.getElementById('proxy-status');
+    if (PROXIES && PROXIES.length > 0) {
+        toggleButton.disabled = false;
+        toggleButton.textContent = 'Enable Proxies';
+        proxyStatus.textContent = 'Proxies: Disabled';
+    } else {
+        toggleButton.disabled = true;
+        toggleButton.textContent = 'No Proxies Available';
+        proxyStatus.textContent = 'Proxies: Not Available';
+    }
+};
