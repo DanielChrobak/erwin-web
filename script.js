@@ -6,11 +6,35 @@ let useProxies = false;
 let wordlist = [];
 let PROXIES;
 
+let autoDownloadLogs = false;
+let logCounter = 0;
+
+function toggleAutoDownload() {
+    autoDownloadLogs = !autoDownloadLogs;
+    const toggleButton = document.getElementById('toggle-auto-download');
+    toggleButton.textContent = autoDownloadLogs ? 'Disable Auto-Download' : 'Enable Auto-Download';
+    logMessage(`Auto-download logs ${autoDownloadLogs ? 'enabled' : 'disabled'}.`);
+}
+
+function autoDownloadAndClearLogs() {
+    if (logCounter >= 1000) {
+        downloadLogs();
+        document.getElementById('logs').innerHTML = '';
+        logCounter = 0;
+    }
+}
+
 function logMessage(message) {
     const logDiv = document.getElementById('logs');
-    logDiv.innerHTML += `<p>${new Date().toISOString()} - ${message}</p>`;
+    const logEntry = document.createElement('p');
+    logEntry.textContent = `${new Date().toISOString()} - ${message}`;
+    logDiv.appendChild(logEntry);
     logDiv.scrollTop = logDiv.scrollHeight;
     console.log(message);
+    logCounter++;
+    if (autoDownloadLogs) {
+        autoDownloadAndClearLogs();
+    }
 }
 
 async function fetchWordlist() {
@@ -286,6 +310,7 @@ window.onload = function() {
     fetchWordlist();
     loadApiKeys();
     loadProxies();
+    document.getElementById('toggle-auto-download').addEventListener('click', toggleAutoDownload);
     document.getElementById('add-key').addEventListener('click', addApiKey);
     document.getElementById('start-stop').addEventListener('click', toggleSubmission);
     document.getElementById('upload-proxies').addEventListener('click', uploadProxies);
