@@ -18,7 +18,9 @@ function toggleAutoDownload() {
 
 function autoDownloadAndClearLogs() {
     if (logCounter >= 1000) {
-        downloadLogs();
+        if (autoDownloadLogs) {
+            downloadLogs();
+        }
         document.getElementById('logs').innerHTML = '';
         logCounter = 0;
     }
@@ -32,9 +34,7 @@ function logMessage(message) {
     logDiv.scrollTop = logDiv.scrollHeight;
     console.log(message);
     logCounter++;
-    if (autoDownloadLogs) {
-        autoDownloadAndClearLogs();
-    }
+    autoDownloadAndClearLogs();
 }
 
 async function fetchWordlist() {
