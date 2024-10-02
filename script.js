@@ -165,7 +165,7 @@ async function submitGuesses(apiKey) {
             if (response.response.status === 202) {
                 sleepTime = Math.max(1000, sleepTime - 1000);
             } else if (response.response.status === 429) {
-                sleepTime += 5000;
+                sleepTime += 1000;
             }
         } catch (error) {
             logMessage(`⚠️ Request error | API Key: ${apiKey.slice(0, 10)}... | Error: ${error}`);
