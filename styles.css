@@ -1,3 +1,4 @@
+/* ===== Variables ===== */
 :root {
     --primary-color: #4a90e2;
     --secondary-color: #1e1e1e;
@@ -14,6 +15,7 @@
     --background-color: #ffffff;
 }
 
+/* ===== Global Styles ===== */
 body {
     font-family: 'Roboto', sans-serif;
     margin: 0;
@@ -30,13 +32,7 @@ body {
     padding: 20px;
 }
 
-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
-}
-
+/* ===== Typography ===== */
 h1 {
     color: var(--primary-color);
     margin: 0;
@@ -49,6 +45,37 @@ h2 {
     margin-top: 30px;
 }
 
+/* ===== Header ===== */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+#theme-toggle {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    font-size: 24px;
+    cursor: pointer;
+}
+
+/* ===== Sections ===== */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.section-header h2 {
+    margin: 0;
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+/* ===== Forms and Inputs ===== */
 .input-group {
     display: flex;
     margin-bottom: 15px;
@@ -64,6 +91,7 @@ input[type="text"], input[type="file"] {
     color: var(--text-color);
 }
 
+/* ===== Buttons ===== */
 .btn {
     padding: 10px 20px;
     background-color: var(--primary-color);
@@ -86,6 +114,15 @@ input[type="text"], input[type="file"] {
     background-color: #4CAF50;
 }
 
+.btn-secondary {
+    background-color: #f39c12;
+}
+
+#start-stop {
+    margin-left: 10px;
+}
+
+/* ===== API Keys List ===== */
 #api-keys-list p {
     background-color: var(--secondary-color);
     padding: 10px;
@@ -104,43 +141,7 @@ input[type="text"], input[type="file"] {
     font-weight: bold;
 }
 
-.control-group {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-}
-
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-}
-
-.section-header h2 {
-    margin: 0;
-    border-bottom: none;
-    padding-bottom: 0;
-}
-
-#start-stop {
-    margin-left: 10px;
-}
-
-.btn-secondary {
-    background-color: #f39c12;
-}
-
-#theme-toggle {
-    background: none;
-    border: none;
-    color: var(--text-color);
-    font-size: 24px;
-    cursor: pointer;
-}
-
+/* ===== Logs Section ===== */
 .logs-controls {
     display: flex;
     justify-content: space-between;
@@ -172,4 +173,31 @@ input[type="text"], input[type="file"] {
 
 #logs.hidden {
     display: none;
+}
+
+/* ===== Scrollbar Styles ===== */
+/* For Webkit browsers (Chrome, Safari, newer versions of Edge) */
+#logs::-webkit-scrollbar {
+    width: 10px;
+}
+
+#logs::-webkit-scrollbar-track {
+    background: var(--secondary-color);
+    border-radius: 5px;
+}
+
+#logs::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 5px;
+    border: 2px solid var(--secondary-color);
+}
+
+#logs::-webkit-scrollbar-thumb:hover {
+    background: #3a78c1;
+}
+
+/* For Firefox */
+#logs {
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-color) var(--secondary-color);
 }
