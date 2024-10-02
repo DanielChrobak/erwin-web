@@ -1,49 +1,47 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Erwin Web</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
     <div class="container">
         <header>
             <h1>Erwin Web Submission</h1>
+            <button id="theme-toggle" aria-label="Toggle dark mode">
+                <i class="fas fa-moon"></i>
+            </button>
         </header>
         <main>
             <section id="api-key-section">
                 <h2>API Keys</h2>
                 <div class="input-group">
                     <input type="text" id="api-key" placeholder="Enter API Key">
-                    <button id="add-key" class="btn">Add Key</button>
+                    <button id="add-key" class="btn"><i class="fas fa-plus"></i> Add Key</button>
                 </div>
                 <div id="api-keys-list"></div>
-            </section>
-            <section id="proxy-section">
-                <h2>Proxy Settings</h2>
-                <div class="input-group">
-                    <input type="file" id="proxy-file" accept=".txt">
-                    <button id="upload-proxies" class="btn">Upload Proxies</button>
-                </div>
             </section>
             <section id="control-section">
                 <div class="control-group">
                     <div class="left-controls">
-                        <button id="toggle-proxies" class="btn">Enable Proxies</button>
-                        <span id="proxy-status" style="color: #e74c3c">Proxies: Disabled</span>
-                        <button id="toggle-auto-download" class="btn btn-secondary">Enable Auto-Download (logs)</button>
+                        <button id="toggle-auto-download" class="btn btn-secondary"><i class="fas fa-download"></i> Enable Auto-Download</button>
                     </div>
                     <div class="right-controls">
-                        <button id="start-stop" class="btn btn-primary">Start Submission</button>
+                        <button id="start-stop" class="btn btn-primary"><i class="fas fa-play"></i> Start Submission</button>
                     </div>
                 </div>
             </section>
             <section id="logs-section">
                 <h2>Logs</h2>
+                <div class="logs-controls">
+                    <button id="download-logs" class="btn"><i class="fas fa-file-download"></i> Download Logs</button>
+                    <button id="toggle-logs" class="btn"><i class="fas fa-eye-slash"></i> Hide Logs</button>
+                </div>
                 <div id="logs"></div>
-                <button id="download-logs" class="btn">Download Logs</button>
             </section>
         </main>
     </div>
