@@ -265,7 +265,7 @@ window.onload = function() {
     initThemeToggle();
     
     document.getElementById('toggle-auto-download').addEventListener('click', toggleAutoDownload);
-    document.getElementById('add-key').addEventListener('click', addApiKey);
+    document.getElementById('set-key').addEventListener('click', addApiKey);
     document.getElementById('start-stop').addEventListener('click', toggleSubmission);
     document.getElementById('download-logs').addEventListener('click', downloadLogs);
     document.getElementById('toggle-logs').addEventListener('click', toggleLogs);
