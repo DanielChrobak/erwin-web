@@ -6,6 +6,7 @@ let wordlist = [];
 let autoDownloadLogs = false;
 let logCounter = 0;
 let isLogsVisible = true;
+let sleepTime = 5000; 
 
 // Theme management
 function initThemeToggle() {
@@ -52,9 +53,12 @@ function logMessage(message) {
     const logDiv = document.getElementById('logs');
     const logEntry = document.createElement('p');
     logEntry.textContent = `${new Date().toISOString()} - ${message}`;
+    
+    const isAtBottom = logDiv.scrollHeight - logDiv.clientHeight <= logDiv.scrollTop + 1;
+    
     logDiv.appendChild(logEntry);
     
-    if (isLogsVisible) {
+    if (isLogsVisible && isAtBottom) {
         logDiv.scrollTop = logDiv.scrollHeight;
     }
     
@@ -150,23 +154,29 @@ function restartSubmission() {
 async function submitGuesses(apiKey) {
     let attemptCount = 0;
     while (!stopRequested) {
-      attemptCount++;
-      const passwords = await Promise.all(Array(50).fill().map(() => generateMnemonicPhrase()));
-      logMessage(`🔑️ API Key: ${apiKey.slice(0, 10)}... | Submission: ${attemptCount}`);
-      logMessage(`➡️ Submitting ${passwords.length} guesses to oracle`);
-      try {
-        const response = await sendRequest(apiKey, passwords);
-        await handleResponse(response, apiKey);
-      } catch (error) {
-        logMessage(`⚠️ Request error | API Key: ${apiKey.slice(0, 10)}... | Error: ${error}`);
-      }
-  
-      if (stopRequested) break;
-  
-      logMessage(`Sleeping for 4 seconds before next submission...`);
-      await new Promise(resolve => setTimeout(resolve, 4000));
+        attemptCount++;
+        const passwords = await Promise.all(Array(50).fill().map(() => generateMnemonicPhrase()));
+        logMessage(`🔑️ API Key: ${apiKey.slice(0, 10)}... | Submission: ${attemptCount}`);
+        logMessage(`➡️ Submitting ${passwords.length} guesses to oracle`);
+        try {
+            const response = await sendRequest(apiKey, passwords);
+            await handleResponse(response, apiKey);
+            
+            if (response.response.status === 202) {
+                sleepTime = Math.max(1000, sleepTime - 1000);
+            } else if (response.response.status === 429) {
+                sleepTime += 5000;
+            }
+        } catch (error) {
+            logMessage(`⚠️ Request error | API Key: ${apiKey.slice(0, 10)}... | Error: ${error}`);
+        }
+
+        if (stopRequested) break;
+
+        logMessage(`Sleeping for ${sleepTime / 1000} seconds before next submission...`);
+        await new Promise(resolve => setTimeout(resolve, sleepTime));
     }
-  }
+}
 
 async function sendRequest(apiKey, passwords) {
     const startTime = Date.now();
