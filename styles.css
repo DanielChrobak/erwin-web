@@ -110,16 +110,20 @@ input[type="text"], input[type="file"] {
     opacity: 0.9;
 }
 
-.btn-primary {
-    background-color: #4CAF50;
-}
-
 .btn-secondary {
     background-color: #f39c12;
 }
 
 #start-stop {
     margin-left: 10px;
+}
+
+.btn-stop {
+    background-color: #e74c3c;
+}
+
+.btn-start {
+    background-color: #4CAF50;
 }
 
 /* ===== API Keys List ===== */
