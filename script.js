@@ -125,7 +125,10 @@ async function startSubmission() {
     }
     isRunning = true;
     stopRequested = false;
-    document.getElementById('start-stop').innerHTML = '<i class="fas fa-stop"></i> Stop Submission';
+    const button = document.getElementById('start-stop');
+    button.innerHTML = '<i class="fas fa-stop"></i> Stop Submission';
+    button.classList.remove('btn-start');
+    button.classList.add('btn-stop');
     logMessage('Starting submission process...');
     submitGuesses(API_KEY);
 }
@@ -133,7 +136,10 @@ async function startSubmission() {
 function stopSubmission() {
     stopRequested = true;
     isRunning = false;
-    document.getElementById('start-stop').innerHTML = '<i class="fas fa-play"></i> Start Submission';
+    const button = document.getElementById('start-stop');
+    button.innerHTML = '<i class="fas fa-play"></i> Start Submission';
+    button.classList.remove('btn-stop');
+    button.classList.add('btn-start');
     logMessage('Stopping submission. Please wait for the current cycle to complete.');
 }
 
