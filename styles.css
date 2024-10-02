@@ -3,15 +3,25 @@
     --secondary-color: #1e1e1e;
     --text-color: #f5f5f5;
     --border-color: #444;
+    --background-color: #121212;
+}
+
+[data-theme="light"] {
+    --primary-color: #3a78c1;
+    --secondary-color: #f0f0f0;
+    --text-color: #333;
+    --border-color: #ddd;
+    --background-color: #ffffff;
 }
 
 body {
     font-family: 'Roboto', sans-serif;
     margin: 0;
     padding: 0;
-    background-color: var(--secondary-color);
+    background-color: var(--background-color);
     color: var(--text-color);
     line-height: 1.6;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .container {
@@ -21,12 +31,15 @@ body {
 }
 
 header {
-    text-align: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 30px;
 }
 
 h1 {
     color: var(--primary-color);
+    margin: 0;
 }
 
 h2 {
@@ -47,7 +60,7 @@ input[type="text"], input[type="file"] {
     border: 1px solid var(--border-color);
     border-radius: 4px;
     font-size: 16px;
-    background-color: #3a3a3a;
+    background-color: var(--secondary-color);
     color: var(--text-color);
 }
 
@@ -60,22 +73,21 @@ input[type="text"], input[type="file"] {
     cursor: pointer;
     font-size: 16px;
     transition: background-color 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }
 
 .btn:hover {
-    background-color: #3a78c1;
+    opacity: 0.9;
 }
 
 .btn-primary {
     background-color: #4CAF50;
 }
 
-.btn-primary:hover {
-    background-color: #45a049;
-}
-
 #api-keys-list p {
-    background-color: #2c2c2c;
+    background-color: var(--secondary-color);
     padding: 10px;
     border-radius: 4px;
     margin-bottom: 10px;
@@ -92,8 +104,58 @@ input[type="text"], input[type="file"] {
     font-weight: bold;
 }
 
+.control-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.left-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.right-controls {
+    margin-left: auto;
+}
+
+.btn-secondary {
+    background-color: #f39c12;
+}
+
+#theme-toggle {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.logs-controls {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+.logs-controls .btn {
+    flex: 1;
+    margin: 0 5px;
+}
+
+#download-logs {
+    background-color: #4CAF50;
+}
+
+#toggle-logs {
+    background-color: var(--primary-color);
+}
+
 #logs {
-    background-color: #2c2c2c;
+    background-color: var(--secondary-color);
     border: 1px solid var(--border-color);
     border-radius: 4px;
     padding: 15px;
@@ -102,63 +164,6 @@ input[type="text"], input[type="file"] {
     margin-bottom: 15px;
 }
 
-#logs p {
-    margin: 5px 0;
-    padding: 5px 0;
-    border-bottom: 1px solid var(--border-color);
-    color: var(--text-color);
-}
-
-#logs p:last-child {
-    border-bottom: none;
-}
-
-#download-logs {
-    display: block;
-    margin: 20px auto;
-    background-color: #4CAF50;
-    color: white;
-}
-
-.control-group {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-.left-controls {
-    display: flex;
-    align-items: center;
-}
-
-.right-controls {
-    margin-left: auto;
-}
-
-#toggle-proxies {
-    margin-right: 10px;
-}
-
-#proxy-status {
-    margin-left: 10px;
-    font-weight: bold;
-    color: #e0e0e0;
-}
-
-#start-stop {
-    padding: 10px 20px;
-}
-
-.btn-secondary {
-    background-color: #f39c12;
-    color: white;
-}
-
-.btn-secondary:hover {
-    background-color: #e67e22;
-}
-
-#toggle-auto-download {
-    margin-left: 10px;
+#logs.hidden {
+    display: none;
 }
