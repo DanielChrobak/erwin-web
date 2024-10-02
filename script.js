@@ -1,19 +1,66 @@
 const API_URL = "https://api.erwin.lol";
-let API_KEYS = [];
+let API_KEY = "";
 let isRunning = false;
 let stopRequested = false;
-let useProxies = false;
 let wordlist = [];
-let PROXIES;
-
 let autoDownloadLogs = false;
 let logCounter = 0;
+let isLogsVisible = true;
 
-function toggleAutoDownload() {
-    autoDownloadLogs = !autoDownloadLogs;
-    const toggleButton = document.getElementById('toggle-auto-download');
-    toggleButton.textContent = autoDownloadLogs ? 'Disable Auto-Download' : 'Enable Auto-Download';
-    logMessage(`Auto-download logs ${autoDownloadLogs ? 'enabled' : 'disabled'}.`);
+// Theme management
+function initThemeToggle() {
+    const themeToggle = document.getElementById('theme-toggle');
+    themeToggle.addEventListener('click', toggleTheme);
+    loadSavedTheme();
+}
+
+function toggleTheme() {
+    const htmlElement = document.documentElement;
+    const isDark = htmlElement.getAttribute('data-theme') === 'dark';
+    const newTheme = isDark ? 'light' : 'dark';
+    htmlElement.setAttribute('data-theme', newTheme);
+    const themeToggle = document.getElementById('theme-toggle');
+    themeToggle.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    localStorage.setItem('theme', newTheme);
+}
+
+function loadSavedTheme() {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        const themeToggle = document.getElementById('theme-toggle');
+        themeToggle.innerHTML = savedTheme === 'dark' ? '<i class="fas fa-moon"></i>' : '<i class="fas fa-sun"></i>';
+    }
+}
+
+// Logging functions
+function toggleLogs() {
+    const logsDiv = document.getElementById('logs');
+    const toggleButton = document.getElementById('toggle-logs');
+    isLogsVisible = !isLogsVisible;
+    
+    if (isLogsVisible) {
+        logsDiv.classList.remove('hidden');
+        toggleButton.innerHTML = '<i class="fas fa-eye-slash"></i> Hide Logs';
+    } else {
+        logsDiv.classList.add('hidden');
+        toggleButton.innerHTML = '<i class="fas fa-eye"></i> Show Logs';
+    }
+}
+
+function logMessage(message) {
+    const logDiv = document.getElementById('logs');
+    const logEntry = document.createElement('p');
+    logEntry.textContent = `${new Date().toISOString()} - ${message}`;
+    logDiv.appendChild(logEntry);
+    
+    if (isLogsVisible) {
+        logDiv.scrollTop = logDiv.scrollHeight;
+    }
+    
+    console.log(message);
+    logCounter++;
+    autoDownloadAndClearLogs();
 }
 
 function autoDownloadAndClearLogs() {
@@ -26,17 +73,130 @@ function autoDownloadAndClearLogs() {
     }
 }
 
-function logMessage(message) {
-    const logDiv = document.getElementById('logs');
-    const logEntry = document.createElement('p');
-    logEntry.textContent = `${new Date().toISOString()} - ${message}`;
-    logDiv.appendChild(logEntry);
-    logDiv.scrollTop = logDiv.scrollHeight;
-    console.log(message);
-    logCounter++;
-    autoDownloadAndClearLogs();
+function downloadLogs() {
+    const logs = document.getElementById('logs').innerText;
+    const blob = new Blob([logs], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'erwin_logs.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }
 
+// API Key management
+function addApiKey() {
+    const apiKeyInput = document.getElementById('api-key');
+    const newApiKey = apiKeyInput.value.trim();
+    if (newApiKey) {
+        API_KEY = newApiKey;
+        apiKeyInput.value = '';
+        saveApiKey();
+        logMessage(`New API Key set: ${API_KEY.slice(0, 10)}...`);
+        if (isRunning) {
+            restartSubmission();
+        }
+    }
+}
+
+function saveApiKey() {
+    localStorage.setItem('apiKey', API_KEY);
+}
+
+function loadApiKey() {
+    const savedKey = localStorage.getItem('apiKey');
+    if (savedKey) {
+        API_KEY = savedKey;
+        logMessage(`Loaded API key from storage: ${API_KEY.slice(0, 10)}...`);
+    }
+}
+
+// Submission process
+async function startSubmission() {
+    if (!API_KEY) {
+        alert('Please add an API key before starting.');
+        return;
+    }
+    isRunning = true;
+    stopRequested = false;
+    document.getElementById('start-stop').innerHTML = '<i class="fas fa-stop"></i> Stop Submission';
+    logMessage('Starting submission process...');
+    submitGuesses(API_KEY);
+}
+
+function stopSubmission() {
+    stopRequested = true;
+    isRunning = false;
+    document.getElementById('start-stop').innerHTML = '<i class="fas fa-play"></i> Start Submission';
+    logMessage('Stopping submission. Please wait for the current cycle to complete.');
+}
+
+function toggleSubmission() {
+    if (!isRunning) {
+        startSubmission();
+    } else {
+        stopSubmission();
+    }
+}
+
+function restartSubmission() {
+    logMessage('Restarting submission process...');
+    stopSubmission();
+    setTimeout(startSubmission, 1000);
+}
+
+async function submitGuesses(apiKey) {
+    let attemptCount = 0;
+    while (!stopRequested) {
+      attemptCount++;
+      const passwords = await Promise.all(Array(50).fill().map(() => generateMnemonicPhrase()));
+      logMessage(`🔑️ API Key: ${apiKey.slice(0, 10)}... | Submission: ${attemptCount}`);
+      logMessage(`➡️ Submitting ${passwords.length} guesses to oracle`);
+      try {
+        const response = await sendRequest(apiKey, passwords);
+        await handleResponse(response, apiKey);
+      } catch (error) {
+        logMessage(`⚠️ Request error | API Key: ${apiKey.slice(0, 10)}... | Error: ${error}`);
+      }
+  
+      if (stopRequested) break;
+  
+      logMessage(`Sleeping for 4 seconds before next submission...`);
+      await new Promise(resolve => setTimeout(resolve, 4000));
+    }
+  }
+
+async function sendRequest(apiKey, passwords) {
+    const startTime = Date.now();
+    const headers = {
+        'x-api-key': apiKey,
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+    };
+
+    const response = await fetch(`${API_URL}/submit_guesses`, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(passwords),
+    });
+
+    const requestTime = (Date.now() - startTime) / 1000;
+    return { response, requestTime };
+}
+
+async function handleResponse(responseData, apiKey) {
+    const { response, requestTime } = responseData;
+    if (response.status === 202) {
+        logMessage(`✅ Guesses accepted | API Key: ${apiKey.slice(0, 10)}... | Time: ${requestTime.toFixed(2)}s`);
+    } else {
+        const responseText = await response.text();
+        logMessage(`❌ Guesses rejected | API Key: ${apiKey.slice(0, 10)}... | Status: ${response.status} | Response: ${responseText} | Time: ${requestTime.toFixed(2)}s`);
+    }
+}
+
+// Mnemonic generation
 async function fetchWordlist() {
     const url = 'https://raw.githubusercontent.com/bitcoin/bips/master/bip-0039/english.txt';
     try {
@@ -89,243 +249,24 @@ async function generateMnemonicPhrase() {
     return mnemonic.join(' ');
 }
 
-function getRandomProxy() {
-    return PROXIES[Math.floor(Math.random() * PROXIES.length)];
+function toggleAutoDownload() {
+    autoDownloadLogs = !autoDownloadLogs;
+    const toggleButton = document.getElementById('toggle-auto-download');
+    toggleButton.innerHTML = autoDownloadLogs 
+        ? '<i class="fas fa-download"></i> Disable Auto-Download' 
+        : '<i class="fas fa-download"></i> Enable Auto-Download';
+    logMessage(`Auto-download logs ${autoDownloadLogs ? 'enabled' : 'disabled'}.`);
 }
 
-async function submitGuesses(apiKey) {
-    let attemptCount = 0;
-    while (!stopRequested) {
-        attemptCount++;
-        const passwords = await Promise.all(Array(50).fill().map(() => generateMnemonicPhrase()));
-        console.log(passwords);
-        const proxy = useProxies ? getRandomProxy() : null;
-        
-        logMessage(`🔑️ API Key: ${apiKey.slice(0, 10)}... | Submission: ${attemptCount}${proxy ? ` | Proxy: ${proxy}` : ''}`);
-        logMessage(`➡️ Submitting ${passwords.length} guesses to oracle`);
-
-        const startTime = Date.now();
-        try {
-            const headers = {
-                'x-api-key': apiKey,
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            };
-            if (useProxies && proxy) {
-                headers['X-Forwarded-For'] = proxy;
-            }
-
-            const response = await fetch(`${API_URL}/submit_guesses`, {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify(passwords),
-            });
-            const requestTime = (Date.now() - startTime) / 1000;
-
-            if (response.status === 202) {
-                logMessage(`✅ Guesses accepted | API Key: ${apiKey.slice(0, 10)}... | Time: ${requestTime.toFixed(2)}s`);
-            } else {
-                const responseText = await response.text();
-                logMessage(`❌ Guesses rejected | API Key: ${apiKey.slice(0, 10)}... | Status: ${response.status} | Response: ${responseText} | Time: ${requestTime.toFixed(2)}s`);
-            }
-        } catch (error) {
-            logMessage(`⚠️ Request error | API Key: ${apiKey.slice(0, 10)}... | Error: ${error}`);
-        }
-
-        if (stopRequested) break;
-    }
-}
-
-function addApiKey() {
-    const apiKeyInput = document.getElementById('api-key');
-    const apiKey = apiKeyInput.value.trim();
-    if (apiKey) {
-        if (API_KEYS.includes(apiKey)) {
-            alert('This API key has already been added.');
-        } else {
-            API_KEYS.push(apiKey);
-            apiKeyInput.value = '';
-            updateApiKeysList();
-            saveApiKeys();
-            logMessage(`New API Key added: ${apiKey.slice(0, 10)}...`);
-
-            if (isRunning) {
-                logMessage('Restarting submission process to include new API key...');
-                stopSubmission();
-                setTimeout(() => {
-                    startSubmission();
-                }, 1000);
-            }
-        }
-    }
-}
-
-function updateApiKeysList() {
-    const apiKeysList = document.getElementById('api-keys-list');
-    apiKeysList.innerHTML = API_KEYS.map((key, index) => 
-        `<p>
-            <span>API Key ${index + 1}: ${key.slice(0, 10)}...</span>
-            <button class="remove-key" data-index="${index}">Remove</button>
-         </p>`
-    ).join('');
-
-    document.querySelectorAll('.remove-key').forEach(button => {
-        button.addEventListener('click', removeApiKey);
-    });
-}
-
-function removeApiKey(event) {
-    const index = event.target.getAttribute('data-index');
-    const removedKey = API_KEYS[index];
-    API_KEYS.splice(index, 1);
-    updateApiKeysList();
-    saveApiKeys();
-    logMessage(`Removed API Key: ${removedKey.slice(0, 10)}...`);
-
-    if (isRunning) {
-        stopSubmission();
-        setTimeout(() => {
-            if (API_KEYS.length > 0) {
-                startSubmission();
-            } else {
-                logMessage('No API keys left. Submission stopped.');
-            }
-        }, 1000);
-    }
-}
-
-function startSubmission() {
-    if (API_KEYS.length === 0) {
-        alert('Please add at least one API key before starting.');
-        return;
-    }
-    isRunning = true;
-    stopRequested = false;
-    document.getElementById('start-stop').textContent = 'Stop Submission';
-    logMessage('Starting submission process...');
-    API_KEYS.forEach((apiKey, index) => {
-        submitGuesses(apiKey);
-    });
-}
-
-function stopSubmission() {
-    stopRequested = true;
-    isRunning = false;
-    document.getElementById('start-stop').textContent = 'Start Submission';
-    logMessage('Stopping submission. Please wait for the current cycle to complete.');
-}
-
-function toggleSubmission() {
-    if (!isRunning) {
-        startSubmission();
-    } else {
-        stopSubmission();
-    }
-}
-
-function saveApiKeys() {
-    localStorage.setItem('apiKeys', JSON.stringify(API_KEYS));
-}
-
-function loadApiKeys() {
-    const savedKeys = localStorage.getItem('apiKeys');
-    if (savedKeys) {
-        API_KEYS = JSON.parse(savedKeys);
-        updateApiKeysList();
-        logMessage(`Loaded ${API_KEYS.length} API key(s) from storage.`);
-    }
-}
-
-function uploadProxies() {
-    const fileInput = document.getElementById('proxy-file');
-    const file = fileInput.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const content = e.target.result;
-            PROXIES = content.split('\n').filter(line => line.trim() !== '');
-            saveProxies();
-            logMessage(`Uploaded ${PROXIES.length} proxies.`);
-        };
-        reader.readAsText(file);
-    }
-}
-
-function toggleProxies() {
-    if (!useProxies && (!PROXIES || PROXIES.length === 0)) {
-        alert('No proxies available. Please upload proxies before enabling.');
-        return;
-    }
-
-    useProxies = !useProxies;
-    const toggleButton = document.getElementById('toggle-proxies');
-    const proxyStatus = document.getElementById('proxy-status');
-    if (useProxies) {
-        toggleButton.textContent = 'Disable Proxies';
-        proxyStatus.textContent = 'Proxies: Enabled';
-        proxyStatus.style.color = '#4CAF50';
-    } else {
-        toggleButton.textContent = 'Enable Proxies';
-        proxyStatus.textContent = 'Proxies: Disabled';
-        proxyStatus.style.color = '#e74c3c';
-    }
-    logMessage(`Proxy usage ${useProxies ? 'enabled' : 'disabled'}.`);
-
-    if (isRunning) {
-        logMessage('Restarting submission process to update proxy settings...');
-        stopSubmission();
-        setTimeout(() => {
-            startSubmission();
-        }, 4000);
-    }
-}
-
-
-function saveProxies() {
-    localStorage.setItem('proxies', JSON.stringify(PROXIES));
-}
-
-function loadProxies() {
-    const savedProxies = localStorage.getItem('proxies');
-    if (savedProxies) {
-        PROXIES = JSON.parse(savedProxies);
-        logMessage(`Loaded ${PROXIES.length} proxy(ies) from storage.`);
-    }
-}
-
-function downloadLogs() {
-    const logs = document.getElementById('logs').innerText;
-    const blob = new Blob([logs], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'erwin_logs.txt';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-}
-
+// Initialization
 window.onload = function() {
     fetchWordlist();
-    loadApiKeys();
-    loadProxies();
+    loadApiKey();
+    initThemeToggle();
+    
     document.getElementById('toggle-auto-download').addEventListener('click', toggleAutoDownload);
     document.getElementById('add-key').addEventListener('click', addApiKey);
     document.getElementById('start-stop').addEventListener('click', toggleSubmission);
-    document.getElementById('upload-proxies').addEventListener('click', uploadProxies);
-    document.getElementById('toggle-proxies').addEventListener('click', toggleProxies);
     document.getElementById('download-logs').addEventListener('click', downloadLogs);
-
-    const toggleButton = document.getElementById('toggle-proxies');
-    const proxyStatus = document.getElementById('proxy-status');
-    if (PROXIES && PROXIES.length > 0) {
-        toggleButton.disabled = false;
-        toggleButton.textContent = 'Enable Proxies';
-        proxyStatus.textContent = 'Proxies: Disabled';
-    } else {
-        toggleButton.disabled = true;
-        toggleButton.textContent = 'No Proxies Available';
-        proxyStatus.textContent = 'Proxies: Not Available';
-    }
+    document.getElementById('toggle-logs').addEventListener('click', toggleLogs);
 };
