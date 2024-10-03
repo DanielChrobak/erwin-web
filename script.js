@@ -6,7 +6,7 @@ let wordlist = [];
 let autoDownloadLogs = false;
 let logCounter = 0;
 let isLogsVisible = true;
-let sleepTime = 5000; 
+let sleepTime = 30000; 
 
 // Theme management
 function initThemeToggle() {
